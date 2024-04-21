@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect,useState  } from 'react'
 import LichChieuCumRap from '../../layout/LichChieuCumRap/LichChieuCumRap'
 import { Header } from 'antd/es/layout/layout'
 import { useDispatch, useSelector } from "react-redux";
@@ -17,8 +17,9 @@ import { Box, Button, Container, Grid, Typography } from "@mui/material";
 import Image from "../../components/Image";
 import { movieDetailsActions } from "../../redux/slice/movieDetails";
 import Loader from "../../components/Loading/Loading";
-
+import { quanLyRapServ } from '../../services/quanLyRap';
 import "./style.scss";
+
 const detail = () => {
     return (
         <div>
@@ -35,12 +36,28 @@ const detail = () => {
 function MovieDetailsPage() {
     const dispatch = useDispatch();
     const { loading, data, error } = useSelector((state) => state.movieDetailsSlice);
-    
+    const [maLichChieuList, setMaLichChieuList] = useState([]);
     const movieID = useParams();
 
     useEffect(() => {
         dispatch(movieDetailsActions.fetchMovieDetails(movieID.id));
     }, []);
+
+ useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const ThongTinLichChieuPhim = await quanLyRapServ.LayThongTinLichChieuPhim(movieID.id);
+            const lichChieuPhim = ThongTinLichChieuPhim?.data?.content?.heThongRapChieu?.flatMap(heThongRap => heThongRap.cumRapChieu.flatMap(cumRap => cumRap.lichChieuPhim)) || [];
+            const maLichChieuList = lichChieuPhim.map(lichChieu => lichChieu.maLichChieu);
+            setMaLichChieuList(maLichChieuList); 
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
+
+    fetchData();
+}, [quanLyRapServ, movieID.id]);
+
 
     const socialList = [
         {
@@ -144,7 +161,7 @@ function MovieDetailsPage() {
                                         className="btn-wrapper btn-filled top-info__btn"
                                         endIcon={<FontAwesomeIcon icon={faAnglesRight} />}
                                     >
-                                        <Link to={`/ticket-booking/${data.maPhim}`}>Tickets</Link>
+                                        <Link to={`/ticket-booking/${maLichChieuList[0]}`}>Tickets</Link>
                                     </Button>
                                 </Box>
 
